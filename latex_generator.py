@@ -33,7 +33,7 @@ choices = ['A', 'B', 'C', 'D']
 ######### For the user to specify ##########################
 questions_count = 26
 
-questions_with_segfaults = [7]
+questions_with_segfaults = [7, 11]
 
 marks_for_each_question = [3 if count <= 3 else 4 for count in range(questions_count)]
 
@@ -43,14 +43,19 @@ cpp_files = ['q{}.cpp'.format(i) for i in range(1, questions_count+1)]
 does_not_compile_answer = "Does not compile"
 segfault_answer = "Segmentation fault/Undefined behaviour"
 
+regenerate_questions = [26]
+
 ############################################################
 
 for cpp_file in cpp_files:
-    if not os.path.exists(cpp_file):
+    cpp_path = os.path.join('questionsv3', cpp_file)
+    if not os.path.exists(cpp_path):
         continue
     answer = None
     question_index = int(cpp_file.split('.')[0][1:])
-    marks = marks_for_each_question[question_index]
+    if (len(regenerate_questions) > 0) and (not (question_index in regenerate_questions)):
+        continue
+    marks = marks_for_each_question[question_index - 1]
     random_choices = random.sample(choices, 2)
     correct_random_choice = random_choices[0]
     incorrect_random_choice = random_choices[1]
@@ -58,16 +63,18 @@ for cpp_file in cpp_files:
         answer = segfault_answer
     else:
         # Suppress the output from the compilation in case there are warnings
-        if os.system("g++ -std=c++11 -o main {} >/dev/null 2>&1".format(cpp_file)) == 0:
+        if os.system("g++ -std=c++11 -o main {} >/dev/null 2>&1".format(cpp_path)) == 0:
             answer = subprocess.run(['./main'], stdout=subprocess.PIPE).stdout.decode('utf-8').replace('\n', '')
         else:
             answer = does_not_compile_answer
+    if answer.strip() == '':
+        answer = "Empty output"
     correctChoiceLine = "answer{}".format(correct_random_choice)
     incorrectChoiceLine = "answer{}".format(incorrect_random_choice)
-    with open(os.path.join("texfiles", cpp_file.replace('cpp', 'tex')), 'w') as texFile:
+    with open(os.path.join("texfilesv3", cpp_file.replace('cpp', 'tex')), 'w') as texFile:
         for line in latex:
             if "codeblock" in line:
-                with open(cpp_file, 'r') as file:
+                with open(cpp_path, 'r') as file:
                     file_data = file.read()
                 texFile.write(line.format(codeblock=file_data))
             # write the correct answer at the respective choice's line
